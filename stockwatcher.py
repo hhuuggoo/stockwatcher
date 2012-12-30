@@ -1,6 +1,7 @@
 import requests
 import datetime as dt
 import math
+import time
 
 def get_prices(stocks):
     format_url = "http://finance.yahoo.com/d/quotes.csv?s=%s&f=l1"
@@ -31,7 +32,8 @@ def run(stocks, thresholds, interval, alltimes, notify,
         price_dict = get_prices(stocks)
     else:
         price_dict = newprices
-    currtime = dt.datetime.now().time()
+    currdt = dt.datetime.now()
+    currtime = currdt.time()
     if lasttime is None:
         notify(price_dict, [])
         lastprices.update(price_dict)
@@ -46,13 +48,47 @@ def run(stocks, thresholds, interval, alltimes, notify,
             if lastprice is None or \
                    abs(math.log(lastprice/currprice)) >= threshold:
                 tonotify[stock] = currprice
+        print "loopcheck", price_dict, lastprices
         if len(tonotify) > 0:
             notify(price_dict, tonotify.keys())
             lastprices.update(tonotify)
     if loop:
         time.sleep(interval)
         run(stocks, thresholds, interval, alltimes, notify,
-            lastprices=lastprices, lasttime=currtime)
+            lastprices=lastprices, lasttime=currdt)
 
 if __name__ == "__main__":
-    pass
+    def ses_notify(pricedict, stocks):
+        print "notify", pricedict, stocks
+        lines = []
+        keys = pricedict.keys()
+        keys.sort()
+        if stocks:
+            lines.append("big movers, %s" % ",".join(stocks))
+        for k in keys:
+            v = pricedict[k]
+            lines.append("%s : %.2f" % (k,v))
+        message = "\n".join(lines)
+        print message
+        import json
+        with open("/home/yata/keys.json") as f:
+            data = f.read()
+            keys = json.loads(data)
+        from boto.ses import SESConnection
+        connection = SESConnection(
+            aws_access_key_id=keys["AWS_ACCESS_KEY"],
+            aws_secret_access_key=keys["AWS_SECRET_KEY"]
+            )
+        connection.send_email("info@eff.iciently.com",
+                              "stock update", message,
+                              ["humongo.shi@gmail.com", "wendy.tng@gmail.com"],
+                              )
+
+    stocks = ["IVV", "VXX", "AAPL", "GOOG", "EMB", "EEM", "FXI", "TIP"]
+    thresholds = [0.005, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0.005]
+    run(stocks, thresholds, 60.0, [dt.time(9,45), dt.time(16,45)], ses_notify, loop=True)
+    
+    
+
+
+
