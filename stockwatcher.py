@@ -86,7 +86,9 @@ if __name__ == "__main__":
 
     stocks = ["IVV", "VXX", "AAPL", "GOOG", "EMB", "EEM", "FXI", "TIP"]
     thresholds = [0.005, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0.005]
-    run(stocks, thresholds, 60.0, [dt.time(9,45), dt.time(16,45)], ses_notify, loop=True)
+    lastprices = get_prices(stocks)
+    run(stocks, thresholds, 60.0, [dt.time(9,45), dt.time(16,45)],
+        ses_notify, loop=True, lasttime=dt.datetime.now(), lastprices=lastprices)
     
     
 
