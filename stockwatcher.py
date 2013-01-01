@@ -26,36 +26,38 @@ def run(stocks, thresholds, interval, alltimes, notify,
         calculating thresholds
     lasttime : optional, lasttime we polled (shd be python datetime)
     """
-    if lastprices is None:
-        lastprices = {}
-    if newprices is None:
-        price_dict = get_prices(stocks)
-    else:
-        price_dict = newprices
-    currdt = dt.datetime.now()
-    currtime = currdt.time()
-    if lasttime is None:
-        notify(price_dict, [])
-        lastprices.update(price_dict)
-    elif any([lasttime.time() < x and currtime >= x for x in alltimes]):
-        notify(price_dict, [])
-        lastprices.update(price_dict)        
-    else:
-        tonotify = {}
-        for stock, threshold in zip(stocks, thresholds):
-            lastprice = lastprices.get(stock)
-            currprice = price_dict.get(stock)
-            if lastprice is None or \
-                   abs(math.log(lastprice/currprice)) >= threshold:
-                tonotify[stock] = currprice
-        print "loopcheck", price_dict, lastprices
-        if len(tonotify) > 0:
-            notify(price_dict, tonotify.keys())
-            lastprices.update(tonotify)
-    if loop:
-        time.sleep(interval)
-        run(stocks, thresholds, interval, alltimes, notify,
-            lastprices=lastprices, lasttime=currdt)
+    while True:
+        if lastprices is None:
+            lastprices = {}
+        if newprices is None:
+            price_dict = get_prices(stocks)
+        else:
+            price_dict = newprices
+        currdt = dt.datetime.now()
+        currtime = currdt.time()
+        if lasttime is None:
+            notify(price_dict, [])
+            lastprices.update(price_dict)
+        elif any([lasttime.time() < x and currtime >= x for x in alltimes]):
+            notify(price_dict, [])
+            lastprices.update(price_dict)        
+        else:
+            tonotify = {}
+            for stock, threshold in zip(stocks, thresholds):
+                lastprice = lastprices.get(stock)
+                currprice = price_dict.get(stock)
+                if lastprice is None or \
+                       abs(math.log(lastprice/currprice)) >= threshold:
+                    tonotify[stock] = currprice
+            print "loopcheck", price_dict, lastprices
+            if len(tonotify) > 0:
+                notify(price_dict, tonotify.keys())
+                lastprices.update(tonotify)
+        if not loop:
+            break
+        else:
+            time.sleep(interval)
+            lasttime=currdt
 
 if __name__ == "__main__":
     def ses_notify(pricedict, stocks):
@@ -84,10 +86,10 @@ if __name__ == "__main__":
                               ["humongo.shi@gmail.com", "wendy.tng@gmail.com"],
                               )
 
-    stocks = ["IVV", "VXX", "AAPL", "GOOG", "EMB", "EEM", "FXI", "TIP"]
-    thresholds = [0.005, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0.005]
+    stocks = ["IVV", "VXX", "AAPL", "GOOG", "EMB", "EEM", "FXI", "TIP", "HYG", "PGF"]
+    thresholds = [0.005, 0.02, 0.01, 0.01, 0.01, 0.01, 0.01, 0.005, 0.01, 0.01]
     lastprices = get_prices(stocks)
-    run(stocks, thresholds, 60.0, [dt.time(9,45), dt.time(16,45)],
+    run(stocks, thresholds, 60.0, [dt.time(10,48), dt.time(16,45)],
         ses_notify, loop=True, lasttime=dt.datetime.now(), lastprices=lastprices)
     
     
